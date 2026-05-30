@@ -1,3 +1,22 @@
+# 🚀 custom-main branch overview
+
+This is the primary production branch for the **MADmotionAI** ecosystem. While the `main` branch is kept perfectly synchronized with the official upstream repository for clean Pull Requests, `custom-main` serves as a consolidated power-user build.
+
+### Key Enhancements in this Build:
+* **MADmotionAI UI Fixes**: Includes critical frontend lifecycle patches (`onConfigure` hooks) ensuring full UI parameter persistence and state preservation during canvas redraws, workflow swaps, and tab toggling.
+
+---
+
+# Fork Overview
+
+# 🔄 Recent Fork Updates
+**v1.0.0**
+  * **Update ltx_director.js - Use Global Prompt persistent state**
+
+     Fixed a layout issue where switching workspace tabs or reloading existing workflow JSON files caused the "Use Global Prompt" checkbox state and text field visibility to completely wipe out. The configuration state is now serialized via LiteGraph node properties and initialized automatically via the `onConfigure` handler.
+
+---
+
 # Overview
 
 This will be a collection of free resources for ComfyUI.
