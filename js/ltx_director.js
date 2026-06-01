@@ -3829,10 +3829,16 @@ app.registerExtension({
           if (HIDDEN_WIDGET_NAMES.includes(w.name)) hideWidget(w);
         }
 
-        // Set default width to be wider on creation (approx 2.5x default ~220px)
-        this.size[0] = 1000;
+        // Set default size on creation if not restored from a saved workflow
+        if (!this.properties["custom_node_width"]) {
+          this.size[0] = 1000;
+          this.size[1] = (this._timelineEditor ? this._timelineEditor.canvasHeight : CANVAS_HEIGHT) + 275;
+        } else {
+          this.size[0] = this.properties["custom_node_width"];
+          this.size[1] = this.properties["custom_node_height"];
+        }
 
-        // Force default for img_compression if not set (ComfyUI sometimes skips optional defaults)
+        // Force default for img_compression if not set
         const compWidget = this.widgets?.find(w => w.name === "img_compression");
         if (compWidget && (compWidget.value === undefined || compWidget.value === null || compWidget.value === 0)) {
           compWidget.value = 18;
@@ -3841,7 +3847,6 @@ app.registerExtension({
         // Handle initialization of global prompt visibility based on stored property state
         const globalPromptWidget = this.widgets?.find(w => w.name === "global_prompt");
         if (globalPromptWidget) {
-          // Read persistent property, default to false (hidden) if not present yet
           const isVisible = this.properties["use_global_prompt"] || false;
           
           if (!globalPromptWidget.options) globalPromptWidget.options = {};
@@ -3862,12 +3867,14 @@ app.registerExtension({
           setValue: () => { },
         });
 
+        // --- UNIVERSAL FIX: Baseline size for widget container ---
+        // Keeps the timeline safely visible on ComfyUI 1.0 without triggering expansion loops
+        const self = this;
         widget.computeSize = function (width) {
           const canvasH = self._timelineEditor ? self._timelineEditor.canvasHeight : CANVAS_HEIGHT;
-          return [width, canvasH + 235];
+          return [width, canvasH + 15];
         };
 
-        const self = this;
         setTimeout(() => {
           try {
             self._timelineEditor = new TimelineEditor(self, container, widget);
@@ -3891,6 +3898,12 @@ app.registerExtension({
           if (w && (w.value == null || w.value === "")) w.value = def;
         }
 
+        // --- CONFIGURE INITIALIZATION FIX FOR SIZE ---
+        if (this.properties && this.properties["custom_node_width"]) {
+          this.size[0] = this.properties["custom_node_width"];
+          this.size[1] = this.properties["custom_node_height"];
+        }
+
         setTimeout(() => {
           if (this._timelineEditor) {
             this._timelineEditor.timeline = parseInitial(this._timelineEditor.timelineDataWidget?.value);
@@ -3902,8 +3915,6 @@ app.registerExtension({
             );
             this._timelineEditor.updateUIFromSelection();
             
-            // --- CONFIGURE INITIALIZATION FIX ---
-            // Re-apply the stored layout state when reloading or switching workflow files
             if (this.properties && this.properties["use_global_prompt"] !== undefined) {
               const isVisible = this.properties["use_global_prompt"];
               const globalPromptWidget = this.widgets?.find(w => w.name === "global_prompt");
@@ -3925,13 +3936,36 @@ app.registerExtension({
             
             this._timelineEditor.render();
             
-            // Redraw canvas context to enforce proper geometry positioning of elements
             if (this.setDirtyCanvas) {
               this.setDirtyCanvas(true, true);
             }
           }
         }, 0);
         return out;
+      };
+
+      // --- FORCE SIZE DURING DRAWING CYCLE ---
+      // This guarantees the node always snaps back to user-defined bounds, killing layout loops
+      const origOnDrawBackground = nodeType.prototype.onDrawBackground;
+      nodeType.prototype.onDrawBackground = function(ctx) {
+        if (origOnDrawBackground) origOnDrawBackground.apply(this, arguments);
+        
+        if (this.properties && this.properties["custom_node_width"]) {
+          this.size[0] = this.properties["custom_node_width"];
+          this.size[1] = this.properties["custom_node_height"];
+        }
+      };
+
+      // --- CAPTURE USER MANUAL RESIZE ---
+      const origOnResize = nodeType.prototype.onResize;
+      nodeType.prototype.onResize = function(size) {
+        if (origOnResize) origOnResize.apply(this, arguments);
+        
+        if (!this.properties) this.properties = {};
+        
+        // Save exact coordinates to properties
+        this.properties["custom_node_width"] = size[0];
+        this.properties["custom_node_height"] = size[1];
       };
     }
   },

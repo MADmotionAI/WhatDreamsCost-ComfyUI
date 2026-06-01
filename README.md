@@ -9,7 +9,14 @@ This is the primary production branch for the **MADmotionAI** ecosystem. While t
 
 # Fork Overview
 
+
 # 🔄 Recent Fork Updates
+**v1.0.1**
+  * **Update ltx_director.js - Master node bounding box layout persistence**
+
+     - Implemented rigid canvas dimensions preservation for both ComfyUI Legacy (1.0) and Nodes 2.0 architectures. Node dimensions are now securely frozen via `onResize` into serialized properties and strictly enforced inside `onDrawBackground` to eliminate layout expansion feedback loops.
+     - Automatically expands the active multiline textarea viewport to cleanly consume newly allocated vertical canvas space, providing much greater readability for long scene prompts.
+
 **v1.0.0**
   * **Update ltx_director.js - Use Global Prompt persistent state**
 
